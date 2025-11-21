@@ -376,8 +376,15 @@
 
     <section class="featured-heroes">
         <h2 class="section-title">热门英雄</h2>
-        <div class="heroes-grid" id="heroes-grid">
-            <!-- 英雄卡片将通过Vue.js动态生成 -->
+        <div class="heroes-grid" id="app">
+            <div v-for="hero in heroes" :key="hero.id" class="hero-card">
+                <img :src="hero.image" :alt="hero.name" class="hero-image">
+                <div class="hero-info">
+                    <h3 class="hero-name">{{ hero.name }}</h3>
+                    <p class="hero-role">{{ hero.role }}</p>
+                    <p class="hero-description">{{ hero.description }}</p>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -429,7 +436,6 @@
     </div>
 
     <script>
-        // Vue.js 应用
         const { createApp } = Vue;
 
         createApp({
@@ -476,18 +482,18 @@
                 },
                 initParticles() {
                     // 使用PIXI.js创建粒子背景
-                    const app = new PIXI.Application({
+                    const pixiApp = new PIXI.Application({
                         width: window.innerWidth,
                         height: window.innerHeight,
                         backgroundColor: 0x000000,
                         backgroundAlpha: 0
                     });
                     
-                    document.getElementById('particles-container').appendChild(app.view);
+                    document.getElementById('particles-container').appendChild(pixiApp.view);
                     
                     // 创建粒子容器
                     const particleContainer = new PIXI.Container();
-                    app.stage.addChild(particleContainer);
+                    pixiApp.stage.addChild(particleContainer);
                     
                     // 创建粒子
                     const particles = [];
@@ -497,8 +503,8 @@
                         particle.drawCircle(0, 0, Math.random() * 3 + 1);
                         particle.endFill();
                         
-                        particle.x = Math.random() * app.screen.width;
-                        particle.y = Math.random() * app.screen.height;
+                        particle.x = Math.random() * pixiApp.screen.width;
+                        particle.y = Math.random() * pixiApp.screen.height;
                         particle.vx = (Math.random() - 0.5) * 2;
                         particle.vy = (Math.random() - 0.5) * 2;
                         
@@ -507,21 +513,46 @@
                     }
                     
                     // 动画循环
-                    app.ticker.add(() => {
+                    pixiApp.ticker.add(() => {
                         particles.forEach(particle => {
                             particle.x += particle.vx;
                             particle.y += particle.vy;
                             
-                            if (particle.x < 0) particle.x = app.screen.width;
-                            if (particle.x > app.screen.width) particle.x = 0;
-                            if (particle.y < 0) particle.y = app.screen.height;
-                            if (particle.y > app.screen.height) particle.y = 0;
+                            if (particle.x < 0) particle.x = pixiApp.screen.width;
+                            if (particle.x > pixiApp.screen.width) particle.x = 0;
+                            if (particle.y < 0) particle.y = pixiApp.screen.height;
+                            if (particle.y > pixiApp.screen.height) particle.y = 0;
                         });
                     });
                     
                     // 响应窗口大小变化
                     window.addEventListener('resize', () => {
-                        app.renderer.resize(window.innerWidth, window.innerHeight);
+                        pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
+                    });
+                },
+                initScrollAnimations() {
+                    this.$nextTick(() => {
+                        const observerOptions = {
+                            threshold: 0.1,
+                            rootMargin: '0px 0px -50px 0px'
+                        };
+                        
+                        const observer = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                    entry.target.style.opacity = '1';
+                                    entry.target.style.transform = 'translateY(0)';
+                                }
+                            });
+                        }, observerOptions);
+                        
+                        // 观察所有卡片
+                        document.querySelectorAll('.hero-card, .feature-card').forEach(card => {
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateY(30px)';
+                            card.style.transition = 'all 0.6s ease';
+                            observer.observe(card);
+                        });
                     });
                 }
             },
@@ -529,46 +560,10 @@
                 // 初始化粒子背景
                 this.initParticles();
                 
-                // 渲染英雄卡片
-                const heroesGrid = document.getElementById('heroes-grid');
-                this.heroes.forEach(hero => {
-                    const heroCard = document.createElement('div');
-                    heroCard.className = 'hero-card';
-                    heroCard.innerHTML = `
-                        <img src="${hero.image}" alt="${hero.name}" class="hero-image">
-                        <div class="hero-info">
-                            <h3 class="hero-name">${hero.name}</h3>
-                            <p class="hero-role">${hero.role}</p>
-                            <p class="hero-description">${hero.description}</p>
-                        </div>
-                    `;
-                    heroesGrid.appendChild(heroCard);
-                });
-                
-                // 添加滚动动画
-                const observerOptions = {
-                    threshold: 0.1,
-                    rootMargin: '0px 0px -50px 0px'
-                };
-                
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.style.opacity = '1';
-                            entry.target.style.transform = 'translateY(0)';
-                        }
-                    });
-                }, observerOptions);
-                
-                // 观察所有卡片
-                document.querySelectorAll('.hero-card, .feature-card').forEach(card => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(30px)';
-                    card.style.transition = 'all 0.6s ease';
-                    observer.observe(card);
-                });
+                // 初始化滚动动画
+                this.initScrollAnimations();
             }
-        }).mount();
+        }).mount('#app');
 
         // 平滑滚动
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
